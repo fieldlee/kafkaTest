@@ -3,6 +3,7 @@ package consumer
 import (
 	"fmt"
 	"github.com/Shopify/sarama"
+	"github.com/bsm/sarama-cluster"
 	"log"
 	"os"
 	"strings"
@@ -59,20 +60,18 @@ func Consumer()  {
 func GroupConsumer(){
 	groupID := "group-1"
 
-	config := sarama.NewConfig()
+	config := cluster.NewConfig()
 
 	//config.Group.Return.Notifications = true //如果启用，重新平衡通知将在通知通道上返回(默认禁用)。
 	// config.Consumer.Offsets.CommitInterval = 1 * time.Second //提交更新偏移量的频率。默认为1。
 	// config.Consumer.Offsets.Initial = sarama.OffsetNewest    //初始从最新的offset开始 应该是最新的或最迟的。默认为OffsetNewest。
-	g,err :=sarama.NewConsumerGroup(strings.Split("localhost:9092", ","),groupID,config)
-	//c, err := cluster.NewConsumer(strings.Split("localhost:9092", ","), groupID, strings.Split(topics, ","), config)
+	//g,err :=sarama.NewConsumerGroup(strings.Split("localhost:9092", ","),groupID,config)
+	c, err := cluster.NewConsumer(strings.Split("localhost:9092", ","), groupID, strings.Split(topic, ","),config)
 	if err != nil {
 		//glog.Errorf("Failed open consumer: %v", err)
 		return
 	}
-	defer g.Close()
-
-	g.Consume()
+	defer c.Close()
 
 	// 这是必须的
 	go func(c *cluster.Consumer) {
@@ -82,7 +81,7 @@ func GroupConsumer(){
 		for {
 			select {
 			case err := <-errors:
-				glog.Errorln(err)
+				log.Println(err.Error())
 			case <-noti:
 			}
 		}
